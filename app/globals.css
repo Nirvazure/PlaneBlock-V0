@@ -46,8 +46,6 @@
   --game-airplane: oklch(0.696 0.17 162.48);
   --game-airplane-head: oklch(0.488 0.243 264.376);
   --game-hover: oklch(0.269 0 0);
-  /* Added destroyed state color */
-  --game-destroyed: oklch(0.8 0.3 15);
 }
 
 @theme inline {
@@ -98,8 +96,6 @@
   --color-game-airplane: var(--game-airplane);
   --color-game-airplane-head: var(--game-airplane-head);
   --color-game-hover: var(--game-hover);
-  /* Added destroyed color mapping */
-  --color-game-destroyed: var(--game-destroyed);
 }
 
 @layer base {

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
 export type GamePhase = "setup" | "battle" | "finished"
-export type CellState = "empty" | "airplane-body" | "airplane-head" | "hit" | "miss" | "destroyed"
+export type CellState = "empty" | "airplane-body" | "airplane-head" | "hit" | "miss"
 export type Direction = "up" | "down" | "left" | "right"
 
 export interface Airplane {
@@ -140,10 +140,16 @@ export default function AirplaneBattlePage() {
 
                     if (attackBoard[row][col] !== "empty") return
 
-                    if (opponentBoard[row][col] === "airplane-body" || opponentBoard[row][col] === "airplane-head") {
-                      if (opponentBoard[row][col] === "airplane-head") {
-                        attackBoard[row][col] = "destroyed"
+                    let result: "hit" | "miss" | "destroy" = "miss"
 
+                    if (opponentBoard[row][col] === "airplane-body" || opponentBoard[row][col] === "airplane-head") {
+                      result = "hit"
+                      attackBoard[row][col] = "hit"
+
+                      // Check if airplane head is hit
+                      if (opponentBoard[row][col] === "airplane-head") {
+                        result = "destroy"
+                        // Mark airplane as destroyed
                         const updatedAirplanes = gameState.playerAirplanes[opponent].map((airplane) => {
                           if (airplane.head.row === row && airplane.head.col === col) {
                             return { ...airplane, isDestroyed: true }
@@ -163,6 +169,7 @@ export default function AirplaneBattlePage() {
                           },
                         }))
 
+                        // Check for win condition
                         const destroyedCount = updatedAirplanes.filter((a) => a.isDestroyed).length
                         if (destroyedCount === 3) {
                           setGameState((prev) => ({
@@ -172,8 +179,6 @@ export default function AirplaneBattlePage() {
                           }))
                           return
                         }
-                      } else {
-                        attackBoard[row][col] = "hit"
                       }
                     } else {
                       attackBoard[row][col] = "miss"
@@ -187,6 +192,14 @@ export default function AirplaneBattlePage() {
                       },
                       currentPlayer: prev.currentPlayer === 1 ? 2 : 1,
                     }))
+
+                    // Show result
+                    const messages = {
+                      hit: "击中！",
+                      miss: "未击中",
+                      destroy: "击毁飞机！",
+                    }
+                    alert(messages[result])
                   }}
                   gamePhase={gameState.phase}
                 />

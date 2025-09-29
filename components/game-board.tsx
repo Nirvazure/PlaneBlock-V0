@@ -23,8 +23,6 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
         return "✕"
       case "miss":
         return "○"
-      case "destroyed":
-        return "💥"
       default:
         return ""
     }
@@ -37,7 +35,6 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
       "bg-game-airplane-head text-primary-foreground": cellState === "airplane-head",
       "bg-game-hit text-destructive-foreground": cellState === "hit",
       "bg-game-miss text-muted-foreground": cellState === "miss",
-      "bg-game-destroyed text-game-destroyed animate-pulse": cellState === "destroyed",
       "hover:bg-game-hover cursor-pointer": isClickable && cellState === "empty",
       "cursor-not-allowed": !isClickable && gamePhase === "battle",
       "hover:scale-105 hover:shadow-md": isClickable,
