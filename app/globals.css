@@ -4,53 +4,67 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.696 0.17 162.48);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.488 0.243 264.376);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  /* NES B&W palette */
+  --nes-bg: #000000;
+  --nes-panel: #2a2a2a;
+  --nes-panel-light: #404040;
+  --nes-border-light: #c9c7c3;
+  --nes-border-dark: #1a1a1a;
+  --nes-text: #ffffff;
+  --nes-text-muted: #888888;
 
-  /* Game specific colors */
-  --game-grid: oklch(0.3 0 0);
-  --game-water: oklch(0.205 0 0);
-  --game-hit: oklch(0.577 0.245 27.325);
-  --game-miss: oklch(0.708 0 0);
-  --game-airplane: oklch(0.696 0.17 162.48);
-  --game-airplane-head: oklch(0.488 0.243 264.376);
-  --game-hover: oklch(0.269 0 0);
+  --background: var(--nes-bg);
+  --foreground: var(--nes-text);
+  --card: var(--nes-panel);
+  --card-foreground: var(--nes-text);
+  --popover: var(--nes-panel);
+  --popover-foreground: var(--nes-text);
+  --primary: var(--nes-text);
+  --primary-foreground: var(--nes-bg);
+  --secondary: var(--nes-panel-light);
+  --secondary-foreground: var(--nes-text);
+  --muted: var(--nes-panel-light);
+  --muted-foreground: var(--nes-text-muted);
+  --accent: var(--nes-panel-light);
+  --accent-foreground: var(--nes-text);
+  --destructive: #666666;
+  --destructive-foreground: var(--nes-text);
+  --border: var(--nes-border-dark);
+  --input: var(--nes-border-dark);
+  --ring: var(--nes-border-light);
+  --chart-1: var(--nes-text);
+  --chart-2: var(--nes-text-muted);
+  --chart-3: var(--nes-panel-light);
+  --chart-4: var(--nes-border-light);
+  --chart-5: var(--nes-text);
+  --radius: 0;
+  --sidebar: var(--nes-panel);
+  --sidebar-foreground: var(--nes-text);
+  --sidebar-primary: var(--nes-text);
+  --sidebar-primary-foreground: var(--nes-bg);
+  --sidebar-accent: var(--nes-panel-light);
+  --sidebar-accent-foreground: var(--nes-text);
+  --sidebar-border: var(--nes-border-dark);
+  --sidebar-ring: var(--nes-border-light);
+
+  /* NES border widths */
+  --nes-border: 3px;
+  --nes-border-thick: 4px;
+
+  /* Game specific - B&W */
+  --game-grid: var(--nes-border-dark);
+  --game-water: #0a0a0a;
+  --game-hit: #555555;
+  --game-miss: var(--nes-text-muted);
+  --game-airplane: #404040;
+  --game-airplane-head: #666666;
+  --game-hover: var(--nes-panel-light);
+  --game-destroyed: #444444;
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-press-start), var(--font-geist-sans);
+  --font-mono: var(--font-press-start), var(--font-geist-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -75,10 +89,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -96,6 +110,7 @@
   --color-game-airplane: var(--game-airplane);
   --color-game-airplane-head: var(--game-airplane-head);
   --color-game-hover: var(--game-hover);
+  --color-game-destroyed: var(--game-destroyed);
 }
 
 @layer base {
@@ -103,6 +118,24 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
   }
+}
+
+/* NES-style utility: 3D raised border (light top/left, dark bottom/right) */
+.nes-border-raised {
+  border: var(--nes-border) solid var(--nes-border-dark);
+  border-top-color: var(--nes-border-light);
+  border-left-color: var(--nes-border-light);
+  box-shadow: 2px 2px 0 var(--nes-border-dark);
+}
+
+/* NES-style utility: 3D inset border */
+.nes-border-inset {
+  border: var(--nes-border) solid var(--nes-border-light);
+  border-bottom-color: var(--nes-border-dark);
+  border-right-color: var(--nes-border-dark);
 }

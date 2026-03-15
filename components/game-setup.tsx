@@ -5,7 +5,8 @@ import { GameBoard } from "./game-board"
 import { Button } from "./ui/button"
 import { Card } from "./ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import type { GameState, Airplane, Direction, CellState } from "@/app/page"
+import { toast } from "sonner"
+import type { GameState, Airplane, Direction, CellState } from "@/lib/game-types"
 
 interface GameSetupProps {
   gameState: GameState
@@ -24,99 +25,74 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
   const canPlaceMore = currentPlayerAirplanes.length < 3
 
   const getAirplaneShape = (headRow: number, headCol: number, direction: Direction) => {
-    const positions = []
+    const positions: { row: number; col: number; type: "head" | "body" }[] = []
 
     switch (direction) {
       case "up":
-        // Head (机头)
         positions.push({ row: headRow, col: headCol, type: "head" })
-        // Wings (机翅) - 5 cells horizontal above head
-        for (let i = -2; i <= 2; i++) {
-          positions.push({ row: headRow - 1, col: headCol + i, type: "body" })
-        }
-        // Tail (机尾) - 3 cells vertical above wings
-        for (let i = 2; i <= 4; i++) {
-          positions.push({ row: headRow - i, col: headCol, type: "body" })
-        }
-        break
-      case "down":
-        // Head
-        positions.push({ row: headRow, col: headCol, type: "head" })
-        // Wings - 5 cells horizontal below head
         for (let i = -2; i <= 2; i++) {
           positions.push({ row: headRow + 1, col: headCol + i, type: "body" })
         }
-        // Tail - 3 cells vertical below wings
-        for (let i = 2; i <= 4; i++) {
-          positions.push({ row: headRow + i, col: headCol, type: "body" })
+        positions.push({ row: headRow + 2, col: headCol, type: "body" })
+        positions.push({ row: headRow + 3, col: headCol - 1, type: "body" })
+        positions.push({ row: headRow + 3, col: headCol, type: "body" })
+        positions.push({ row: headRow + 3, col: headCol + 1, type: "body" })
+        break
+      case "down":
+        positions.push({ row: headRow, col: headCol, type: "head" })
+        for (let i = -2; i <= 2; i++) {
+          positions.push({ row: headRow - 1, col: headCol + i, type: "body" })
         }
+        positions.push({ row: headRow - 2, col: headCol, type: "body" })
+        positions.push({ row: headRow - 3, col: headCol - 1, type: "body" })
+        positions.push({ row: headRow - 3, col: headCol, type: "body" })
+        positions.push({ row: headRow - 3, col: headCol + 1, type: "body" })
         break
       case "left":
-        // Head
         positions.push({ row: headRow, col: headCol, type: "head" })
-        // Wings - 5 cells vertical left of head
-        for (let i = -2; i <= 2; i++) {
-          positions.push({ row: headRow + i, col: headCol - 1, type: "body" })
-        }
-        // Tail - 3 cells horizontal left of wings
-        for (let i = 2; i <= 4; i++) {
-          positions.push({ row: headRow, col: headCol - i, type: "body" })
-        }
-        break
-      case "right":
-        // Head
-        positions.push({ row: headRow, col: headCol, type: "head" })
-        // Wings - 5 cells vertical right of head
         for (let i = -2; i <= 2; i++) {
           positions.push({ row: headRow + i, col: headCol + 1, type: "body" })
         }
-        // Tail - 3 cells horizontal right of wings
-        for (let i = 2; i <= 4; i++) {
-          positions.push({ row: headRow, col: headCol + i, type: "body" })
+        positions.push({ row: headRow, col: headCol + 2, type: "body" })
+        positions.push({ row: headRow - 1, col: headCol + 3, type: "body" })
+        positions.push({ row: headRow, col: headCol + 3, type: "body" })
+        positions.push({ row: headRow + 1, col: headCol + 3, type: "body" })
+        break
+      case "right":
+        positions.push({ row: headRow, col: headCol, type: "head" })
+        for (let i = -2; i <= 2; i++) {
+          positions.push({ row: headRow + i, col: headCol - 1, type: "body" })
         }
+        positions.push({ row: headRow, col: headCol - 2, type: "body" })
+        positions.push({ row: headRow - 1, col: headCol - 3, type: "body" })
+        positions.push({ row: headRow, col: headCol - 3, type: "body" })
+        positions.push({ row: headRow + 1, col: headCol - 3, type: "body" })
         break
     }
 
-    // Filter out positions that are outside the board
     return positions.filter((pos) => pos.row >= 0 && pos.row < 10 && pos.col >= 0 && pos.col < 10)
   }
 
   const canPlaceAirplane = (headRow: number, headCol: number, direction: Direction) => {
     const shape = getAirplaneShape(headRow, headCol, direction)
-    console.log("[v0] Airplane shape positions:", shape.length, "expected: 9")
 
-    if (shape.length < 7) {
-      console.log("[v0] Airplane too small, only", shape.length, "positions")
-      return false // Too many parts outside the board
+    if (shape.length < 10) {
+      return false
     }
 
     const currentBoard = gameState.playerBoards[gameState.currentPlayer]
-    const canPlace = shape.every((pos) => {
-      const isEmpty = currentBoard[pos.row][pos.col] === "empty"
-      if (!isEmpty) {
-        console.log("[v0] Position occupied:", pos.row, pos.col, currentBoard[pos.row][pos.col])
-      }
-      return isEmpty
-    })
-
-    console.log("[v0] Can place airplane:", canPlace)
-    return canPlace
+    return shape.every((pos) => currentBoard[pos.row][pos.col] === "empty")
   }
 
   const placeAirplane = (headRow: number, headCol: number) => {
-    console.log("[v0] Attempting to place airplane at:", headRow, headCol, selectedDirection)
-
     if (!canPlaceAirplane(headRow, headCol, selectedDirection)) {
-      console.log("[v0] Cannot place airplane at this position")
-      alert("无法在此位置放置飞机，请选择其他位置或方向")
+      toast.error("无法在此位置放置飞机，请选择其他位置或方向")
       return
     }
 
     const shape = getAirplaneShape(headRow, headCol, selectedDirection)
     const newBoard = gameState.playerBoards[gameState.currentPlayer].map((row) => [...row])
     const bodyPositions: { row: number; col: number }[] = []
-
-    console.log("[v0] Placing airplane with", shape.length, "positions")
 
     shape.forEach((pos) => {
       if (pos.type === "head") {
@@ -134,8 +110,6 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
       direction: selectedDirection,
       isDestroyed: false,
     }
-
-    console.log("[v0] Successfully placed airplane:", newAirplane)
 
     setGameState((prev) => ({
       ...prev,
@@ -198,17 +172,18 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
   )
 
   return (
-    <Card className="p-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold mb-2">玩家 {gameState.currentPlayer} 布置飞机</h2>
-        <p className="text-muted-foreground">已放置 {currentPlayerAirplanes.length}/3 架飞机</p>
-        {canPlaceMore && <p className="text-sm text-primary mt-2">选择方向后，点击格子放置飞机机头</p>}
+    <Card className="p-4">
+      <div className="text-center mb-4">
+        <h2 className="text-sm font-bold mb-2">玩家 {gameState.currentPlayer} 布置飞机</h2>
+        <p className="text-xs text-muted-foreground">已放置 {currentPlayerAirplanes.length}/3 架飞机</p>
+        {canPlaceMore && <p className="text-xs text-primary mt-2">选择方向后，点击格子放置飞机机头</p>}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1">
           <GameBoard
             board={combinedBoard}
+            clickableBoard={gameState.playerBoards[gameState.currentPlayer]}
             airplanes={currentPlayerAirplanes}
             isOwn={true}
             onCellClick={canPlaceMore ? placeAirplane : () => {}}
@@ -234,8 +209,8 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold">游戏规则</h3>
-            <ul className="text-sm text-muted-foreground space-y-2">
+            <h3 className="text-xs font-bold">游戏规则</h3>
+            <ul className="text-xs text-muted-foreground space-y-2">
               <li>• 每个玩家需要放置3架飞机</li>
               <li>• 飞机形状：机头1格 + 机翅5格 + 机尾3格</li>
               <li>• 飞机可以朝四个方向放置</li>

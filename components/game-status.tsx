@@ -1,14 +1,14 @@
 "use client"
 
-import { Card } from "./ui/card"
 import { Badge } from "./ui/badge"
-import type { GameState } from "@/app/page"
+import type { GameState } from "@/lib/game-types"
 
 interface GameStatusProps {
   gameState: GameState
+  compact?: boolean
 }
 
-export function GameStatus({ gameState }: GameStatusProps) {
+export function GameStatus({ gameState, compact = false }: GameStatusProps) {
   const getPhaseText = () => {
     switch (gameState.phase) {
       case "setup":
@@ -29,38 +29,43 @@ export function GameStatus({ gameState }: GameStatusProps) {
     return { total: airplanes.length, destroyed, remaining }
   }
 
-  return (
-    <Card className="p-6">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Badge variant="outline" className="text-lg px-4 py-2">
-            {getPhaseText()}
-          </Badge>
-
-          {gameState.phase === "battle" && (
-            <div className="text-lg font-semibold">当前回合: 玩家 {gameState.currentPlayer}</div>
-          )}
-
-          {gameState.phase === "finished" && gameState.winner && (
-            <div className="text-xl font-bold text-primary">🎉 玩家 {gameState.winner} 获胜！</div>
-          )}
-        </div>
-
-        <div className="flex gap-6">
-          {[1, 2].map((player) => {
-            const stats = getPlayerStats(player as 1 | 2)
-            return (
-              <div key={player} className="text-center">
-                <div className="text-sm text-muted-foreground">玩家 {player}</div>
-                <div className="text-lg font-semibold">
-                  {stats.remaining}/{stats.total} 架飞机
-                </div>
-                {stats.destroyed > 0 && <div className="text-xs text-destructive">已击毁 {stats.destroyed} 架</div>}
-              </div>
-            )
-          })}
-        </div>
+  const barContent = (
+    <div className="flex flex-1 items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className="text-xs px-3 py-1">
+          {getPhaseText()}
+        </Badge>
+        {gameState.phase === "battle" && (
+          <span className="text-xs font-bold">当前回合: 玩家 {gameState.currentPlayer}</span>
+        )}
+        {gameState.phase === "finished" && gameState.winner && (
+          <span className="text-xs font-bold">🎉 玩家 {gameState.winner} 获胜！</span>
+        )}
       </div>
-    </Card>
+      <div className="flex gap-6">
+        {[1, 2].map((player) => {
+          const stats = getPlayerStats(player as 1 | 2)
+          return (
+            <div key={player} className="text-center">
+              <div className="text-[10px] text-muted-foreground">玩家 {player}</div>
+              <div className="text-xs font-bold">
+                {stats.remaining}/{stats.total} 架飞机
+              </div>
+              {stats.destroyed > 0 && <div className="text-[10px] text-muted-foreground">已击毁 {stats.destroyed}</div>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  if (compact) {
+    return barContent
+  }
+
+  return (
+    <div className="flex items-center gap-4 p-3 border-[3px] border-[var(--nes-border-dark)] border-t-[var(--nes-border-light)] border-l-[var(--nes-border-light)] bg-card">
+      {barContent}
+    </div>
   )
 }

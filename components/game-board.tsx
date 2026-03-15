@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import type { CellState, Airplane, GamePhase } from "@/app/page"
+import type { CellState, Airplane, GamePhase } from "@/lib/game-types"
 
 interface GameBoardProps {
   board: CellState[][]
@@ -10,9 +10,12 @@ interface GameBoardProps {
   onCellClick: (row: number, col: number) => void
   onCellHover?: (row: number, col: number) => void
   gamePhase: GamePhase
+  /** 用于判断可点击的棋盘；未传时与 board 相同（解决 preview 覆盖导致无法点击） */
+  clickableBoard?: CellState[][]
 }
 
-export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, gamePhase }: GameBoardProps) {
+export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, gamePhase, clickableBoard }: GameBoardProps) {
+  const boardForClick = clickableBoard ?? board
   const getCellContent = (row: number, col: number, cellState: CellState) => {
     switch (cellState) {
       case "airplane-head":
@@ -21,6 +24,8 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
         return "★"
       case "hit":
         return "✕"
+      case "destroyed":
+        return "💥"
       case "miss":
         return "○"
       default:
@@ -29,15 +34,15 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
   }
 
   const getCellClassName = (cellState: CellState, isClickable: boolean) => {
-    return cn("w-8 h-8 border border-game-grid flex items-center justify-center text-sm font-bold transition-colors", {
+    return cn("w-8 h-8 border-[2px] border-[var(--nes-border-dark)] flex items-center justify-center text-xs font-bold transition-colors", {
       "bg-game-water": cellState === "empty",
       "bg-game-airplane text-game-airplane-head": cellState === "airplane-body",
       "bg-game-airplane-head text-primary-foreground": cellState === "airplane-head",
       "bg-game-hit text-destructive-foreground": cellState === "hit",
+      "bg-game-destroyed text-destructive-foreground": cellState === "destroyed",
       "bg-game-miss text-muted-foreground": cellState === "miss",
       "hover:bg-game-hover cursor-pointer": isClickable && cellState === "empty",
       "cursor-not-allowed": !isClickable && gamePhase === "battle",
-      "hover:scale-105 hover:shadow-md": isClickable,
     })
   }
 
@@ -51,9 +56,9 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
     <div className="inline-block bg-card p-4 rounded-lg">
       {/* Column headers */}
       <div className="flex mb-2">
-        <div className="w-8 h-6"></div>
+        <div className="w-8 h-6" />
         {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="w-8 h-6 flex items-center justify-center text-xs font-medium text-muted-foreground">
+          <div key={i} className="w-8 h-6 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
             {String.fromCharCode(65 + i)}
           </div>
         ))}
@@ -63,27 +68,28 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex">
           {/* Row header */}
-          <div className="w-8 h-8 flex items-center justify-center text-xs font-medium text-muted-foreground">
+          <div className="w-8 h-8 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
             {rowIndex + 1}
           </div>
 
           {/* Row cells */}
-          {row.map((cellState, colIndex) => (
+          {row.map((cellState, colIndex) => {
+            const clickableState = boardForClick[rowIndex]?.[colIndex] ?? "empty"
+            return (
             <button
               key={`${rowIndex}-${colIndex}`}
-              className={getCellClassName(cellState, isClickable(cellState))}
+              className={getCellClassName(cellState, isClickable(clickableState))}
               onClick={() => {
-                console.log("[v0] Cell button clicked:", rowIndex, colIndex, "clickable:", isClickable(cellState))
-                if (isClickable(cellState)) {
+                if (isClickable(clickableState)) {
                   onCellClick(rowIndex, colIndex)
                 }
               }}
               onMouseEnter={() => onCellHover?.(rowIndex, colIndex)}
-              disabled={!isClickable(cellState)}
+              disabled={!isClickable(clickableState)}
             >
               {getCellContent(rowIndex, colIndex, cellState)}
             </button>
-          ))}
+          )})}
         </div>
       ))}
     </div>
