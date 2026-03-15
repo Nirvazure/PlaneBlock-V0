@@ -13,7 +13,10 @@ export const metadata: Metadata = {
   title: 'PlaneBlock',
   description: '经典纸笔飞机大战的数字版本',
   generator: 'v0.app',
+  icons: { icon: '/planeBlock.png' },
 }
+
+export const viewport = { width: 'device-width', initialScale: 1 }
 
 export default function RootLayout({
   children,

@@ -179,8 +179,8 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
         {canPlaceMore && <p className="text-xs text-primary mt-2">选择方向后，点击格子放置飞机机头</p>}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1">
+      <div className="flex flex-col lg:flex-row gap-6 min-w-0">
+        <div className="flex-1 min-w-0 w-full overflow-hidden">
           <GameBoard
             board={combinedBoard}
             clickableBoard={gameState.playerBoards[gameState.currentPlayer]}

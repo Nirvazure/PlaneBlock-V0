@@ -8,6 +8,7 @@ export default function GuidePage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="max-w-2xl w-full p-8">
+        <img src="/planeBlock.png" alt="PlaneBlock" className="max-w-[200px] w-48 mx-auto mb-6" />
         <h1 className="text-xl font-bold text-center mb-6">PlaneBlock</h1>
         <p className="text-muted-foreground text-center mb-8 text-xs">经典纸笔飞机大战的数字版本</p>
 

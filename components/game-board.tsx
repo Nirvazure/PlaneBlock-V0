@@ -34,7 +34,9 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
   }
 
   const getCellClassName = (cellState: CellState, isClickable: boolean) => {
-    return cn("w-8 h-8 border-[2px] border-[var(--nes-border-dark)] flex items-center justify-center text-xs font-bold transition-colors", {
+    return cn(
+      "flex-1 min-w-0 aspect-square sm:flex-none sm:w-7 sm:h-7 md:w-8 md:h-8 border-[2px] border-[var(--nes-border-dark)] flex items-center justify-center text-[10px] sm:text-xs font-bold transition-colors",
+      {
       "bg-game-water": cellState === "empty",
       "bg-game-airplane text-game-airplane-head": cellState === "airplane-body",
       "bg-game-airplane-head text-primary-foreground": cellState === "airplane-head",
@@ -53,12 +55,12 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
   }
 
   return (
-    <div className="inline-block bg-card p-4 rounded-lg">
+    <div className="w-full max-w-full sm:w-auto sm:max-w-none sm:inline-block bg-card p-3 sm:p-4 rounded-lg mx-auto">
       {/* Column headers */}
-      <div className="flex mb-2">
-        <div className="w-8 h-6" />
+      <div className="flex mb-1.5 sm:mb-2 w-full">
+        <div className="w-5 h-5 sm:w-7 sm:h-5 md:w-8 md:h-6 shrink-0" />
         {Array.from({ length: 10 }, (_, i) => (
-          <div key={i} className="w-8 h-6 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+          <div key={i} className="flex-1 min-w-0 h-5 sm:flex-none sm:w-7 sm:h-5 md:w-8 md:h-6 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
             {String.fromCharCode(65 + i)}
           </div>
         ))}
@@ -66,9 +68,9 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
 
       {/* Game grid */}
       {board.map((row, rowIndex) => (
-        <div key={rowIndex} className="flex">
+        <div key={rowIndex} className="flex w-full items-stretch">
           {/* Row header */}
-          <div className="w-8 h-8 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
+          <div className="w-5 sm:w-7 md:w-8 shrink-0 flex items-center justify-center text-[10px] font-medium text-muted-foreground">
             {rowIndex + 1}
           </div>
 

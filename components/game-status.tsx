@@ -30,28 +30,30 @@ export function GameStatus({ gameState, compact = false }: GameStatusProps) {
   }
 
   const barContent = (
-    <div className="flex flex-1 items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="text-xs px-3 py-1">
+    <div className="flex flex-1 flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <Badge variant="outline" className="text-[10px] sm:text-xs px-2 sm:px-3 py-0.5 sm:py-1">
           {getPhaseText()}
         </Badge>
         {gameState.phase === "battle" && (
-          <span className="text-xs font-bold">当前回合: 玩家 {gameState.currentPlayer}</span>
+          <span className="text-[10px] sm:text-xs font-bold">回合: 玩家 {gameState.currentPlayer}</span>
         )}
         {gameState.phase === "finished" && gameState.winner && (
-          <span className="text-xs font-bold">🎉 玩家 {gameState.winner} 获胜！</span>
+          <span className="text-[10px] sm:text-xs font-bold">🎉 玩家 {gameState.winner} 获胜！</span>
         )}
       </div>
-      <div className="flex gap-6">
+      <div className="flex gap-4 sm:gap-6">
         {[1, 2].map((player) => {
           const stats = getPlayerStats(player as 1 | 2)
           return (
-            <div key={player} className="text-center">
-              <div className="text-[10px] text-muted-foreground">玩家 {player}</div>
-              <div className="text-xs font-bold">
-                {stats.remaining}/{stats.total} 架飞机
+            <div key={player} className="text-center min-w-0">
+              <div className="text-[10px] text-muted-foreground">P{player}</div>
+              <div className="text-[10px] sm:text-xs font-bold">
+                {stats.remaining}/{stats.total}
               </div>
-              {stats.destroyed > 0 && <div className="text-[10px] text-muted-foreground">已击毁 {stats.destroyed}</div>}
+              {stats.destroyed > 0 && (
+                <div className="text-[9px] sm:text-[10px] text-muted-foreground">击毁 {stats.destroyed}</div>
+              )}
             </div>
           )
         })}
