@@ -19,19 +19,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "请先登录" }, { status: 401 })
     }
 
-    const { nickname } = await request.json()
-    const displayName = (nickname && typeof nickname === "string")
-      ? nickname.trim().slice(0, 20)
-      : auth.nickname
+    const { inviteeId } = await request.json()
+    if (!inviteeId || typeof inviteeId !== "string") {
+      return NextResponse.json({ error: "请提供被邀请人 ID" }, { status: 400 })
+    }
+
+    if (inviteeId === auth.userId) {
+      return NextResponse.json({ error: "不能邀请自己" }, { status: 400 })
+    }
 
     const db = getDb()
-    const coll = db.collection("game_sessions")
+    const sessionsColl = db.collection("game_sessions")
+    const invitesColl = db.collection("battle_invites")
 
     let roomCode: string
     let exists = true
     while (exists) {
       roomCode = generateRoomCode()
-      const r = await coll.where({ roomCode }).get()
+      const r = await sessionsColl.where({ roomCode }).get()
       exists = r.data.length > 0
     }
 
@@ -44,22 +49,31 @@ export async function POST(request: Request) {
       winner: null,
     }
 
-    const res = await coll.add({
+    const res = await sessionsColl.add({
       roomCode,
       player1UserId: auth.userId,
       player2UserId: null,
-      player1Nickname: displayName,
+      player1Nickname: auth.nickname,
       player2Nickname: null,
       state: initialState,
       createdAt: new Date(),
     })
 
     const roomId = (res as { _id?: string })._id ?? (res as { id?: string }).id
+
+    await invitesColl.add({
+      inviterId: auth.userId,
+      inviteeId,
+      roomId,
+      status: "pending",
+      createdAt: new Date(),
+    })
+
     return NextResponse.json({ roomId, roomCode })
   } catch (err) {
-    console.error("[API] create room error:", err)
+    console.error("[API] invite error:", err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "创建房间失败" },
+      { error: err instanceof Error ? err.message : "邀请失败" },
       { status: 500 }
     )
   }

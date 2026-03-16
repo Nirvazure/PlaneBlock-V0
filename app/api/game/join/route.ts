@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/cloudbase"
+import { getAuthFromRequest } from "@/lib/auth-server"
 
 export async function POST(request: Request) {
   try {
-    const { roomCode, nickname } = await request.json()
+    const auth = await getAuthFromRequest(request)
+    if (!auth) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 })
+    }
+
+    const { roomCode } = await request.json()
     if (!roomCode || typeof roomCode !== "string") {
       return NextResponse.json({ error: "请提供房间码" }, { status: 400 })
-    }
-    if (!nickname || typeof nickname !== "string") {
-      return NextResponse.json({ error: "请提供昵称" }, { status: 400 })
     }
 
     const db = getDb()
@@ -22,17 +25,24 @@ export async function POST(request: Request) {
     const doc = res.data[0] as {
       _id: string
       roomCode: string
+      player1UserId?: string | null
+      player2UserId?: string | null
       player1Nickname: string
       player2Nickname: string | null
       state: unknown
     }
 
-    if (doc.player2Nickname) {
+    if (doc.player2Nickname || doc.player2UserId) {
       return NextResponse.json({ error: "房间已满" }, { status: 400 })
     }
 
+    if (doc.player1UserId === auth.userId) {
+      return NextResponse.json({ error: "不能加入自己创建的房间" }, { status: 400 })
+    }
+
     await coll.doc(doc._id).update({
-      player2Nickname: nickname.trim().slice(0, 20),
+      player2UserId: auth.userId,
+      player2Nickname: auth.nickname.slice(0, 20),
     })
 
     return NextResponse.json({

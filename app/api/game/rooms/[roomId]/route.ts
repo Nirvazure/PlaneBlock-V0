@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/cloudbase"
+import { getAuthFromRequest } from "@/lib/auth-server"
 import type { GameState } from "@/lib/game-types"
 
 type Doc = {
   _id: string
   roomCode: string
+  player1UserId?: string | null
+  player2UserId?: string | null
   player1Nickname: string
   player2Nickname: string | null
   state: GameState
@@ -49,6 +52,11 @@ export async function PATCH(
   { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
+    const auth = await getAuthFromRequest(request)
+    if (!auth) {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 })
+    }
+
     const { roomId } = await params
     if (!roomId) {
       return NextResponse.json({ error: "缺少 roomId" }, { status: 400 })
@@ -60,6 +68,20 @@ export async function PATCH(
     }
 
     const db = getDb()
+    const res = await db.collection("game_sessions").doc(roomId).get()
+    if (!res.data || !res.data[0]) {
+      return NextResponse.json({ error: "房间不存在" }, { status: 404 })
+    }
+    const doc = res.data[0] as Doc
+    const hasUserId = doc.player1UserId != null || doc.player2UserId != null
+    if (hasUserId) {
+      const isPlayer1 = doc.player1UserId === auth.userId
+      const isPlayer2 = doc.player2UserId === auth.userId
+      if (!isPlayer1 && !isPlayer2) {
+        return NextResponse.json({ error: "无权更新此房间" }, { status: 403 })
+      }
+    }
+
     await db.collection("game_sessions").doc(roomId).update({
       state: state as GameState,
     })

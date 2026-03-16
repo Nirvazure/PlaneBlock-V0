@@ -1,14 +1,29 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-
-const MOCK_USER = { nickname: "游客", avatar: null }
+import { useAuth } from "@/lib/auth-context"
 
 interface TopBarProps {
   onOpenFriends?: () => void
 }
 
 export function TopBar({ onOpenFriends }: TopBarProps) {
+  const { user, loading, logout } = useAuth()
+  const [pendingRequests, setPendingRequests] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    const fetchRequests = () => {
+      fetch("/api/friends/requests", { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : { requests: [] }))
+        .then((d) => setPendingRequests((d.requests ?? []).length))
+    }
+    fetchRequests()
+    const timer = setInterval(fetchRequests, 5000)
+    return () => clearInterval(timer)
+  }, [user])
+
   return (
     <header className="flex justify-between items-center h-14 px-4 bg-card border-b-[3px] border-[var(--nes-border-dark)] border-t-0 border-x-0">
       <Link href="/" className="flex items-center gap-2 text-sm font-bold text-foreground hover:opacity-80 transition-opacity">
@@ -16,24 +31,46 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
         PlaneBlock
       </Link>
       <div className="flex items-center gap-4">
-        {onOpenFriends && (
+        {user && onOpenFriends && (
           <button
             type="button"
             onClick={onOpenFriends}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="relative inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             我的好友
+            {pendingRequests > 0 && (
+              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] text-destructive-foreground">
+                {pendingRequests}
+              </span>
+            )}
           </button>
         )}
-        <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <div className="w-8 h-8 border-2 border-[var(--nes-border-dark)] border-t-[var(--nes-border-light)] border-l-[var(--nes-border-light)] bg-muted flex items-center justify-center text-xs text-muted-foreground">
-            {MOCK_USER.avatar ? (
-              <img src={MOCK_USER.avatar} alt={MOCK_USER.nickname} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              MOCK_USER.nickname.slice(0, 1)
-            )}
+        {loading ? (
+          <div className="w-8 h-8 border-2 border-[var(--nes-border-dark)] bg-muted animate-pulse" />
+        ) : user ? (
+          <div className="flex items-center gap-2">
+            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 border-2 border-[var(--nes-border-dark)] border-t-[var(--nes-border-light)] border-l-[var(--nes-border-light)] bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.nickname} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  user.nickname.slice(0, 1)
+                )}
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              退出
+            </button>
           </div>
-        </Link>
+        ) : (
+          <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">
+            登录
+          </Link>
+        )}
       </div>
     </header>
   )
