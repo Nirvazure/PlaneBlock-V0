@@ -10,7 +10,9 @@ let app: ReturnType<typeof cloudbase.init> | null = null
 export function getCloudbaseApp() {
   if (!app) {
     if (!envId) {
-      throw new Error("缺少 NEXT_PUBLIC_TCB_ENV_ID，请在 .env.local 中配置")
+      throw new Error(
+        "缺少 NEXT_PUBLIC_TCB_ENV_ID。本地开发：在 .env.local 中配置；Vercel 部署：在项目 Settings → Environment Variables 中添加"
+      )
     }
     app = cloudbase.init({
       env: envId,
