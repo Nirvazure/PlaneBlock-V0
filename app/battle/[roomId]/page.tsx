@@ -8,11 +8,10 @@ import { GameSetup } from "@/components/game-setup"
 import { GameStatus } from "@/components/game-status"
 import { Card } from "@/components/ui/card"
 import { getRoom, updateRoomState } from "@/lib/game-session"
-import { initialBoard, type GameState } from "@/lib/game-types"
+import { watchGameRoom } from "@/lib/watch-room"
+import type { GameState } from "@/lib/game-types"
 
 type BattleView = "mine" | "attack"
-
-const POLL_INTERVAL = 2000
 
 export default function BattleRoomPage() {
   const params = useParams()
@@ -26,25 +25,43 @@ export default function BattleRoomPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchRoom = useCallback(async () => {
+  useEffect(() => {
     if (!roomId) return
-    try {
-      const room = await getRoom(roomId)
-      setGameState(room.state)
-      setRoomCode(room.roomCode)
+    let closed = false
+    const onDoc = (doc: { roomCode: string; state: GameState }) => {
+      if (closed) return
+      setGameState(doc.state)
+      setRoomCode(doc.roomCode)
       setError(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "加载失败")
-    } finally {
       setLoading(false)
     }
+    getRoom(roomId)
+      .then((room) => {
+        if (closed) return
+        setGameState(room.state)
+        setRoomCode(room.roomCode)
+        setError(null)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (closed) return
+        setError(err instanceof Error ? err.message : "加载失败")
+        setLoading(false)
+      })
+    const close = watchGameRoom(roomId, {
+      onChange: onDoc,
+      onError: (err) => {
+        if (closed) return
+        console.error("[watch] room error:", err)
+        toast.error("实时同步断开，请刷新页面获取最新状态")
+        setLoading(false)
+      },
+    })
+    return () => {
+      closed = true
+      close()
+    }
   }, [roomId])
-
-  useEffect(() => {
-    fetchRoom()
-    const timer = setInterval(fetchRoom, POLL_INTERVAL)
-    return () => clearInterval(timer)
-  }, [fetchRoom])
 
   const setGameStateAndSync = useCallback(
     (updater: GameState | ((prev: GameState) => GameState)) => {

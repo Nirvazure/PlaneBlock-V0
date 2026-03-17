@@ -1,28 +1,36 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { watchFriendRequests } from "@/lib/watch-friends"
 
 interface TopBarProps {
   onOpenFriends?: () => void
 }
 
 export function TopBar({ onOpenFriends }: TopBarProps) {
+  const pathname = usePathname()
   const { user, loading, logout } = useAuth()
   const [pendingRequests, setPendingRequests] = useState(0)
 
+  const fetchRequests = useCallback(() => {
+    fetch("/api/friends/requests", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : { requests: [] }))
+      .then((d) => setPendingRequests((d.requests ?? []).length))
+  }, [])
+
   useEffect(() => {
-    if (!user) return
-    const fetchRequests = () => {
-      fetch("/api/friends/requests", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : { requests: [] }))
-        .then((d) => setPendingRequests((d.requests ?? []).length))
-    }
+    if (!user?.id) return
+    if (pathname?.startsWith("/battle")) return
     fetchRequests()
-    const timer = setInterval(fetchRequests, 5000)
-    return () => clearInterval(timer)
-  }, [user])
+    const close = watchFriendRequests(user.id, {
+      onUpdate: fetchRequests,
+      onError: () => fetchRequests(),
+    })
+    return close
+  }, [user?.id, pathname, fetchRequests])
 
   return (
     <header className="flex justify-between items-center h-14 px-4 bg-card border-b-[3px] border-[var(--nes-border-dark)] border-t-0 border-x-0">

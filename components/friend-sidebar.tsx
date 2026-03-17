@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Drawer } from "vaul"
 import { Button } from "./ui/button"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
+import { watchFriendRequests, watchFriends } from "@/lib/watch-friends"
 
 interface Friend {
   id: string
@@ -20,6 +22,7 @@ interface FriendSidebarProps {
 
 export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(false)
   const [inviting, setInviting] = useState<string | null>(null)
@@ -27,6 +30,31 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
   const [adding, setAdding] = useState(false)
   const [requests, setRequests] = useState<Array<{ id: string; fromUserId: string; fromNickname: string }>>([])
   const [responding, setResponding] = useState<string | null>(null)
+
+  const fetchData = useCallback(() => {
+    if (!user?.id) return
+    setLoading(true)
+    Promise.all([
+      fetch("/api/friends", { credentials: "include" }).then((r) => (r.ok ? r.json() : { friends: [] })),
+      fetch("/api/friends/requests", { credentials: "include" }).then((r) => (r.ok ? r.json() : { requests: [] })),
+    ])
+      .then(([friendsRes, requestsRes]) => {
+        setFriends(friendsRes.friends ?? [])
+        setRequests(requestsRes.requests ?? [])
+      })
+      .finally(() => setLoading(false))
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!open || !user?.id) return
+    fetchData()
+    const closeReq = watchFriendRequests(user.id, { onUpdate: fetchData, onError: () => fetchData() })
+    const closeFriends = watchFriends(user.id, { onUpdate: fetchData, onError: () => fetchData() })
+    return () => {
+      closeReq()
+      closeFriends()
+    }
+  }, [open, user?.id, fetchData])
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,23 +78,6 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
     }
   }
 
-  const fetchData = () => {
-    fetch("/api/friends", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : { friends: [] }))
-      .then((d) => setFriends(d.friends ?? []))
-    fetch("/api/friends/requests", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : { requests: [] }))
-      .then((d) => setRequests(d.requests ?? []))
-  }
-
-  useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    fetchData()
-    setLoading(false)
-    const timer = setInterval(fetchData, 3000)
-    return () => clearInterval(timer)
-  }, [open])
 
   const handleRespondRequest = async (fromUserId: string, action: "accept" | "reject") => {
     setResponding(fromUserId)

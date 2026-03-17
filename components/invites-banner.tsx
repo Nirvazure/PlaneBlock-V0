@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "./ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { watchBattleInvites } from "@/lib/watch-friends"
 
 interface Invite {
   id: string
@@ -13,21 +14,27 @@ interface Invite {
 
 export function InvitesBanner() {
   const router = useRouter()
+  const pathname = usePathname()
   const { user } = useAuth()
   const [invites, setInvites] = useState<Invite[]>([])
   const [processing, setProcessing] = useState<string | null>(null)
 
+  const fetchInvites = useCallback(() => {
+    fetch("/api/game/invites", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : { invites: [] }))
+      .then((d) => setInvites(d.invites ?? []))
+  }, [])
+
   useEffect(() => {
-    if (!user) return
-    const fetchInvites = () => {
-      fetch("/api/game/invites", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : { invites: [] }))
-        .then((d) => setInvites(d.invites ?? []))
-    }
+    if (!user?.id) return
+    if (pathname?.startsWith("/battle")) return
     fetchInvites()
-    const timer = setInterval(fetchInvites, 3000)
-    return () => clearInterval(timer)
-  }, [user])
+    const close = watchBattleInvites(user.id, {
+      onUpdate: fetchInvites,
+      onError: () => fetchInvites(),
+    })
+    return close
+  }, [user?.id, pathname, fetchInvites])
 
   const handleRespond = async (inviteId: string, action: "accept" | "reject") => {
     setProcessing(inviteId)
