@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useWsUserEvents } from "@/lib/use-ws-user-events"
+import { AvatarDropdown } from "./avatar-dropdown"
 
 interface TopBarProps {
   onOpenFriends?: () => void
@@ -12,7 +13,7 @@ interface TopBarProps {
 
 export function TopBar({ onOpenFriends }: TopBarProps) {
   const pathname = usePathname()
-  const { user, loading, logout } = useAuth()
+  const { user, loading } = useAuth()
   const [pendingRequests, setPendingRequests] = useState(0)
 
   const fetchRequests = useCallback(() => {
@@ -35,40 +36,25 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
         PlaneBlock
       </Link>
       <div className="flex items-center gap-4">
-        {user && onOpenFriends && (
-          <button
-            type="button"
-            onClick={onOpenFriends}
-            className="relative inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            我的好友
-            {pendingRequests > 0 && (
-              <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] text-destructive-foreground">
-                {pendingRequests}
-              </span>
-            )}
-          </button>
-        )}
         {loading ? (
           <div className="w-8 h-8 border-2 border-[var(--nes-border-dark)] bg-muted animate-pulse" />
         ) : user ? (
-          <div className="flex items-center gap-2">
-            <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 border-2 border-[var(--nes-border-dark)] border-t-[var(--nes-border-light)] border-l-[var(--nes-border-light)] bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.nickname} className="w-full h-full rounded-full object-cover" />
-                ) : (
-                  user.nickname.slice(0, 1)
+          <div className="flex items-center gap-4">
+            {onOpenFriends && (
+              <button
+                type="button"
+                onClick={onOpenFriends}
+                className="relative inline-flex items-center gap-1 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              >
+                我的好友
+                {pendingRequests > 0 && (
+                  <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] text-destructive-foreground">
+                    {pendingRequests}
+                  </span>
                 )}
-              </div>
-            </Link>
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              退出
-            </button>
+              </button>
+            )}
+            <AvatarDropdown />
           </div>
         ) : (
           <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground">

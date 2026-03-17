@@ -27,3 +27,43 @@ function getApp() {
 export function getDb() {
   return getApp().database()
 }
+
+export async function uploadFileToStorage(cloudPath: string, buffer: Buffer): Promise<string> {
+  const app = getApp()
+  const result = await app.uploadFile({
+    cloudPath,
+    fileContent: buffer,
+  })
+  const res = result as { fileID?: string }
+  if (!res.fileID) throw new Error("上传失败，未返回 fileID")
+  return res.fileID
+}
+
+export async function getTempFileURL(fileID: string, maxAgeSeconds = 604800): Promise<string> {
+  const app = getApp()
+  const result = await app.getTempFileURL({
+    fileList: [{ fileID, maxAge: maxAgeSeconds }],
+  })
+  const res = result as { fileList?: Array<{ tempFileURL?: string }> }
+  const item = res.fileList?.[0]
+  if (!item?.tempFileURL) throw new Error("获取临时链接失败")
+  return item.tempFileURL
+}
+
+export async function getTempFileURLBatch(
+  fileIDs: string[],
+  maxAgeSeconds = 604800
+): Promise<Map<string, string>> {
+  if (fileIDs.length === 0) return new Map()
+  const app = getApp()
+  const fileList = fileIDs.map((fileID) => ({ fileID, maxAge: maxAgeSeconds }))
+  const result = await app.getTempFileURL({ fileList })
+  const res = result as { fileList?: Array<{ fileID?: string; tempFileURL?: string }> }
+  const map = new Map<string, string>()
+  for (const item of res.fileList ?? []) {
+    if (item.fileID && item.tempFileURL) {
+      map.set(item.fileID, item.tempFileURL)
+    }
+  }
+  return map
+}

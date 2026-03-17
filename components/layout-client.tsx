@@ -15,10 +15,10 @@ export function LayoutClient({ children }: LayoutClientProps) {
 
   return (
     <AuthProvider>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col h-screen overflow-hidden">
         <TopBar onOpenFriends={() => setFriendsOpen(true)} />
         <InvitesBanner />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 min-h-0 flex flex-col overflow-auto">{children}</main>
         <FriendSidebar open={friendsOpen} onOpenChange={setFriendsOpen} />
       </div>
     </AuthProvider>

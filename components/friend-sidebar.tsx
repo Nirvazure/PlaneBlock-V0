@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
 import { Drawer } from "vaul"
 import { Button } from "./ui/button"
 import { toast } from "sonner"
@@ -21,7 +20,6 @@ interface FriendSidebarProps {
 }
 
 export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
-  const router = useRouter()
   const { user } = useAuth()
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(false)
@@ -121,8 +119,8 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="right">
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/50" />
-        <Drawer.Content className="fixed top-0 right-0 h-full w-80 max-w-[100vw] bg-card border-l-[3px] border-[var(--nes-border-dark)] border-t-0 border-b-0 flex flex-col">
+        <Drawer.Overlay className="fixed top-14 left-0 right-0 bottom-0 bg-black/50" />
+        <Drawer.Content className="fixed top-14 right-0 h-[calc(100vh-3.5rem)] w-80 max-w-[100vw] bg-card border-l-[3px] border-[var(--nes-border-dark)] border-t-0 border-b-0 flex flex-col">
           <div className="p-4 border-b-[3px] border-[var(--nes-border-dark)]">
             <h2 className="text-sm font-bold mb-3">我的好友</h2>
             <form onSubmit={handleAddFriend} className="flex gap-2">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getDb } from "@/lib/cloudbase"
+import { getDb, getTempFileURLBatch } from "@/lib/cloudbase"
 import { getAuthFromRequest } from "@/lib/auth-server"
 
 export async function GET(request: Request) {
@@ -21,17 +21,43 @@ export async function GET(request: Request) {
       return NextResponse.json({ friends: [] })
     }
 
-    const friends: Array<{ id: string; nickname: string; avatar: string | null; status: "online" | "offline" }> = []
+    const profiles: Array<{ fid: string; nickname?: string; avatar?: string }> = []
     for (const fid of friendIds) {
       const pr = await profilesColl.where({ userId: fid }).get()
       const profile = (pr.data ?? [])[0] as { nickname?: string; avatar?: string } | undefined
-      friends.push({
-        id: fid,
-        nickname: profile?.nickname ?? `用户${fid.slice(-4)}`,
-        avatar: profile?.avatar ?? null,
-        status: "online",
+      profiles.push({
+        fid,
+        nickname: profile?.nickname,
+        avatar: profile?.avatar,
       })
     }
+
+    const avatarFileIDs = profiles
+      .map((p) => p.avatar)
+      .filter((a): a is string => !!a && typeof a === "string" && a.startsWith("cloud://"))
+    let avatarMap = new Map<string, string>()
+    try {
+      avatarMap = await getTempFileURLBatch(avatarFileIDs)
+    } catch (err) {
+      console.warn("[API] friends getTempFileURLBatch failed, avatars set to null:", err)
+    }
+
+    const friends = profiles.map((p) => {
+      let avatar: string | null = null
+      if (p.avatar) {
+        if (p.avatar.startsWith("cloud://")) {
+          avatar = avatarMap.get(p.avatar) ?? null
+        } else if (p.avatar.startsWith("http")) {
+          avatar = p.avatar
+        }
+      }
+      return {
+        id: p.fid,
+        nickname: p.nickname ?? `用户${p.fid.slice(-4)}`,
+        avatar,
+        status: "online" as const,
+      }
+    })
 
     return NextResponse.json({ friends })
   } catch (err) {

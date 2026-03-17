@@ -3,31 +3,55 @@
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/lib/auth-context"
+import { HomeRules } from "@/components/home/HomeRules"
+import { HomeBattleActions } from "@/components/home/HomeBattleActions"
+import { HomeFooter } from "@/components/home/HomeFooter"
 
 export default function GuidePage() {
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-0 bg-[#1e1e1e]">
+        <p className="text-muted-foreground text-lg">加载中...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0 h-0 bg-[#1e1e1e]">
+        <div className="flex-1 min-h-0 flex items-center justify-center px-4 py-4">
+          <Card className="max-w-6xl w-full p-6 md:p-8 rounded-none border-0 bg-[#1e1e1e]">
+            <div className="max-w-2xl mx-auto">
+              <HomeRules />
+              <div className="flex justify-center mt-6">
+                <Button asChild size="lg" className="h-10 text-sm px-6">
+                  <Link href="/login">去登录</Link>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+        <HomeFooter />
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <Card className="max-w-2xl w-full p-8">
-        <img src="/planeBlock.png" alt="PlaneBlock" className="max-w-[200px] w-48 mx-auto mb-6" />
-        <h1 className="text-xl font-bold text-center mb-6">PlaneBlock</h1>
-        <p className="text-muted-foreground text-center mb-8 text-xs">经典纸笔飞机大战的数字版本</p>
-
-        <div className="space-y-4 mb-8">
-          <h2 className="text-sm font-bold">游戏规则</h2>
-          <ul className="text-xs text-muted-foreground space-y-2 list-disc list-inside">
-            <li>双方在 10×10 棋盘上各放置 3 架飞机（每架 4 格：1 机头 + 3 机身）</li>
-            <li>布置阶段：轮流选择方向与位置放置飞机</li>
-            <li>战斗阶段：轮流点击对手棋盘格子进行攻击</li>
-            <li>击中机头可击毁整架飞机，率先击毁对方 3 架飞机者获胜</li>
-          </ul>
-        </div>
-
-        <div className="flex justify-center">
-          <Button asChild size="lg">
-            <Link href="/battle">开始对战</Link>
-          </Button>
-        </div>
-      </Card>
+    <div className="flex-1 flex flex-col min-h-0 h-0 bg-[#1e1e1e]">
+      <div className="flex-1 min-h-0 flex items-center justify-center px-4 py-4">
+        <Card className="max-w-6xl w-full p-6 md:p-8 flex flex-col md:flex-row items-center justify-center gap-8 md:gap-10 rounded-none border-0 bg-[#1e1e1e]">
+          <div className="flex-1 min-w-0 w-full md:max-w-xl">
+            <HomeRules align="left" />
+          </div>
+          <div className="flex-1 flex flex-col items-center md:items-start shrink-0 w-full md:max-w-sm">
+            <HomeBattleActions />
+          </div>
+        </Card>
+      </div>
+      <HomeFooter />
     </div>
   )
 }
