@@ -7,10 +7,22 @@
 ```bash
 cd ws-server
 npm install
-WS_SERVER_SECRET=your-secret node src/index.js
 ```
 
-默认监听 3001 端口。
+在 `ws-server` 目录创建 `.env`：
+
+```
+WS_SERVER_SECRET=your-secret
+PORT=3001
+```
+
+然后执行：
+
+```bash
+node src/index.js
+```
+
+默认监听 3001 端口。dotenv 会自动加载同目录下的 `.env`。
 
 ## 阿里云部署
 
@@ -57,7 +69,7 @@ cd ws-server
 npm install
 ```
 
-创建 `.env` 或使用环境变量：
+在 `ws-server` 目录创建 `.env`（dotenv 会自动加载）：
 
 ```
 WS_SERVER_SECRET=与Vercel相同的密钥
@@ -67,7 +79,7 @@ PORT=3001
 使用 pm2 启动：
 
 ```bash
-WS_SERVER_SECRET=xxx pm2 start src/index.js --name ws
+pm2 start src/index.js --name ws
 pm2 save
 pm2 startup
 ```
