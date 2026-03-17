@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/cloudbase"
 import { getAuthFromRequest } from "@/lib/auth-server"
+import { notifyUser } from "@/lib/ws-webhook"
 
 export async function POST(request: Request) {
   try {
@@ -42,6 +43,8 @@ export async function POST(request: Request) {
       status: "pending",
       createdAt: new Date(),
     })
+
+    await notifyUser(toUserId, "friend_requests")
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useMemo } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { GameBoard } from "@/components/game-board"
@@ -8,6 +8,7 @@ import { GameSetup } from "@/components/game-setup"
 import { GameStatus } from "@/components/game-status"
 import { Card } from "@/components/ui/card"
 import { getRoom, updateRoomState } from "@/lib/game-session"
+import { useWsRoom } from "@/lib/use-ws-room"
 import type { GameState } from "@/lib/game-types"
 
 type BattleView = "mine" | "attack"
@@ -23,57 +24,35 @@ export default function BattleRoomPage() {
   const [roomCode, setRoomCode] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const isUpdatingRef = useRef(false) // 操作锁：true 表示正在执行用户操作
+  const isUpdatingRef = useRef(false)
 
-  useEffect(() => {
-    if (!roomId) return
-    let isMounted = true
+  const onRoomUpdate = useCallback(
+    (room: { roomId: string; roomCode: string; player1Nickname: string; player2Nickname: string | null; state: GameState }) => {
+      setRoomCode(room.roomCode)
+      setError(null)
+      setLoading(false)
+      setGameState((prev) => {
+        if (!prev) return room.state
+        if (JSON.stringify(prev) === JSON.stringify(room.state)) return prev
+        return room.state
+      })
+    },
+    []
+  )
 
-    const pollRoom = async () => {
-      // 如果正在执行用户操作，跳过本次轮询
-      if (isUpdatingRef.current) {
-        return
-      }
-
-      try {
-        const room = await getRoom(roomId)
-        if (!isMounted) return
-
-        setRoomCode(room.roomCode)
-        setError(null)
-        setLoading(false)
-
-        // 深度比较，避免不必要的重渲染
-        setGameState((prev) => {
-          if (!prev) return room.state
-          if (JSON.stringify(prev) === JSON.stringify(room.state)) {
-            return prev // 数据未变化，返回旧引用，不触发重渲染
-          }
-          return room.state
-        })
-      } catch (err) {
-        if (!isMounted) return
-        console.error("[poll] room error:", err)
-        setError(err instanceof Error ? err.message : "加载失败")
-        setLoading(false)
-      }
-    }
-
-    // 初始加载
-    pollRoom()
-
-    // 每 3 秒轮询一次
-    pollIntervalRef.current = setInterval(pollRoom, 3000)
-
-    return () => {
-      isMounted = false
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [roomId])
+  const wsOptions = useMemo(
+    () => ({ shouldSkipFetch: () => isUpdatingRef.current }),
+    []
+  )
+  const { notifyRoomUpdated } = useWsRoom(
+    roomId || null,
+    onRoomUpdate,
+    (err) => {
+      setError(err)
+      setLoading(false)
+    },
+    wsOptions
+  )
 
   const setGameStateAndSync = useCallback(
     async (updater: GameState | ((prev: GameState) => GameState)) => {
@@ -88,12 +67,10 @@ export default function BattleRoomPage() {
       setGameState(next)
       
       try {
-        // 发送到服务器
         await updateRoomState(roomId, next)
-        
-        // 操作成功后，立即拉取最新数据
         const room = await getRoom(roomId)
         setGameState(room.state)
+        notifyRoomUpdated()
       } catch (e) {
         console.error(e)
         toast.error("同步失败，请重试")
@@ -104,7 +81,7 @@ export default function BattleRoomPage() {
         isUpdatingRef.current = false
       }
     },
-    [roomId, gameState]
+    [roomId, gameState, notifyRoomUpdated]
   )
 
   if (loading && !gameState) {

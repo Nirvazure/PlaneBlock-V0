@@ -214,7 +214,7 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
               <li>• 每个玩家需要放置3架飞机</li>
               <li>• 飞机形状：机头1格 + 机翅5格 + 机尾3格</li>
               <li>• 飞机可以朝四个方向放置</li>
-              <li>• 击中机身得"中"，击中机头得"死"</li>
+              <li>• 击中机身得「中」，击中机头得「死」</li>
               <li>• 击毁对方3架飞机获胜</li>
             </ul>
           </div>

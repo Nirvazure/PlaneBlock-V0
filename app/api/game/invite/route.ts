@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getDb } from "@/lib/cloudbase"
 import { getAuthFromRequest } from "@/lib/auth-server"
+import { notifyUser } from "@/lib/ws-webhook"
 import { initialBoard, type GameState } from "@/lib/game-types"
 
 function generateRoomCode(): string {
@@ -68,6 +69,8 @@ export async function POST(request: Request) {
       status: "pending",
       createdAt: new Date(),
     })
+
+    await notifyUser(inviteeId, "invites")
 
     return NextResponse.json({ roomId, roomCode })
   } catch (err) {

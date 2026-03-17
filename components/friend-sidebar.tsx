@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Drawer } from "vaul"
 import { Button } from "./ui/button"
 import { toast } from "sonner"
 import { useAuth } from "@/lib/auth-context"
+import { useWsUserEvents } from "@/lib/use-ws-user-events"
 
 interface Friend {
   id: string
@@ -29,7 +30,6 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
   const [adding, setAdding] = useState(false)
   const [requests, setRequests] = useState<Array<{ id: string; fromUserId: string; fromNickname: string }>>([])
   const [responding, setResponding] = useState<string | null>(null)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchData = useCallback(() => {
     if (!user?.id) return
@@ -45,22 +45,12 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
       .finally(() => setLoading(false))
   }, [user?.id])
 
-  useEffect(() => {
-    if (!open || !user?.id) return
-
-    // 初始加载
-    fetchData()
-
-    // 每 3 秒轮询一次
-    pollIntervalRef.current = setInterval(fetchData, 3000)
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [open, user?.id, fetchData])
+  useWsUserEvents(
+    user?.id ?? null,
+    fetchData,
+    fetchData,
+    { pollInterval: 3000, enabled: open }
+  )
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault()

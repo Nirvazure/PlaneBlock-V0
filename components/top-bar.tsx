@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { useWsUserEvents } from "@/lib/use-ws-user-events"
 
 interface TopBarProps {
   onOpenFriends?: () => void
@@ -13,7 +14,6 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
   const [pendingRequests, setPendingRequests] = useState(0)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchRequests = useCallback(() => {
     fetch("/api/friends/requests", { credentials: "include" })
@@ -21,23 +21,12 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
       .then((d) => setPendingRequests((d.requests ?? []).length))
   }, [])
 
-  useEffect(() => {
-    if (!user?.id) return
-    if (pathname?.startsWith("/battle")) return
-
-    // 初始加载
-    fetchRequests()
-
-    // 每 3 秒轮询一次
-    pollIntervalRef.current = setInterval(fetchRequests, 3000)
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [user?.id, pathname, fetchRequests])
+  useWsUserEvents(
+    user?.id ?? null,
+    () => {},
+    fetchRequests,
+    { pollInterval: 3000, enabled: !pathname?.startsWith("/battle") }
+  )
 
   return (
     <header className="flex justify-between items-center h-14 px-4 bg-card border-b-[3px] border-[var(--nes-border-dark)] border-t-0 border-x-0">

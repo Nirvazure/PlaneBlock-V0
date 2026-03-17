@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "./ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { useWsUserEvents } from "@/lib/use-ws-user-events"
 
 interface Invite {
   id: string
@@ -17,7 +18,6 @@ export function InvitesBanner() {
   const { user } = useAuth()
   const [invites, setInvites] = useState<Invite[]>([])
   const [processing, setProcessing] = useState<string | null>(null)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchInvites = useCallback(() => {
     fetch("/api/game/invites", { credentials: "include" })
@@ -25,23 +25,12 @@ export function InvitesBanner() {
       .then((d) => setInvites(d.invites ?? []))
   }, [])
 
-  useEffect(() => {
-    if (!user?.id) return
-    if (pathname?.startsWith("/battle")) return
-
-    // 初始加载
-    fetchInvites()
-
-    // 每 3 秒轮询一次
-    pollIntervalRef.current = setInterval(fetchInvites, 3000)
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [user?.id, pathname, fetchInvites])
+  useWsUserEvents(
+    user?.id ?? null,
+    fetchInvites,
+    () => {},
+    { pollInterval: 3000, enabled: !pathname?.startsWith("/battle") }
+  )
 
   const handleRespond = async (inviteId: string, action: "accept" | "reject") => {
     setProcessing(inviteId)
