@@ -29,7 +29,7 @@ export function InvitesBanner() {
     user?.id ?? null,
     fetchInvites,
     () => {},
-    { pollInterval: 3000, enabled: !pathname?.startsWith("/battle") }
+    { enabled: !pathname?.startsWith("/battle") }
   )
 
   const handleRespond = async (inviteId: string, action: "accept" | "reject") => {

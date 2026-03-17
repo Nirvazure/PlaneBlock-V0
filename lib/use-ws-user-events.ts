@@ -12,10 +12,9 @@ export function useWsUserEvents(
   userId: string | null,
   onInvites: () => void,
   onFriendRequests: () => void,
-  options?: { pollInterval?: number; enabled?: boolean }
+  options?: { enabled?: boolean }
 ) {
-  const { pollInterval = 3000, enabled = true } = options ?? {}
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { enabled = true } = options ?? {}
   const mountedRef = useRef(true)
 
   const doFetch = useCallback(() => {
@@ -33,7 +32,6 @@ export function useWsUserEvents(
       ensureWsConnection().then((sock) => {
         if (!mountedRef.current) return
         if (!sock) {
-          pollRef.current = setInterval(doFetch, pollInterval)
           doFetch()
           return
         }
@@ -46,19 +44,14 @@ export function useWsUserEvents(
         doFetch()
       })
     } else {
-      pollRef.current = setInterval(doFetch, pollInterval)
       doFetch()
     }
 
     return () => {
       mountedRef.current = false
-      if (pollRef.current) {
-        clearInterval(pollRef.current)
-        pollRef.current = null
-      }
       unsub?.()
     }
-  }, [userId, enabled, doFetch, pollInterval])
+  }, [userId, enabled, doFetch])
 
   return { refetch: doFetch }
 }

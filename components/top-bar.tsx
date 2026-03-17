@@ -25,7 +25,7 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
     user?.id ?? null,
     () => {},
     fetchRequests,
-    { pollInterval: 3000, enabled: !pathname?.startsWith("/battle") }
+    { enabled: !pathname?.startsWith("/battle") }
   )
 
   return (

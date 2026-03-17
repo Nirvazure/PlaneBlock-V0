@@ -49,7 +49,7 @@ export function FriendSidebar({ open, onOpenChange }: FriendSidebarProps) {
     user?.id ?? null,
     fetchData,
     fetchData,
-    { pollInterval: 3000, enabled: open }
+    { enabled: open }
   )
 
   const handleAddFriend = async (e: React.FormEvent) => {

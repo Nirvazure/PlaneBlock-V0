@@ -64,7 +64,7 @@ NEXT_PUBLIC_TCB_ENV_ID=你的 CloudBase 环境 ID
 TCB_SECRET_ID=腾讯云主账号 SecretId（来自 https://console.cloud.tencent.com/cam/capi）
 TCB_SECRET_KEY=腾讯云主账号 SecretKey
 
-# WebSocket 全实时（可选，不配置则自动 fallback 到轮询）
+# WebSocket 全实时（必填，对战/邀请/好友均依赖实时推送，无轮询）
 NEXT_PUBLIC_WS_URL=wss://ws.teotihuacan.cloud
 WS_SERVER_SECRET=与 ws-server 共享的密钥
 WS_WEBHOOK_URL=https://ws.teotihuacan.cloud
@@ -114,7 +114,7 @@ pnpm dev
 2. 玩家 A：`/battle` → 创建房间 → 得到房间码
 3. 玩家 B：`/join` → 输入房间码 → 加入对战（或从好友侧栏「邀请对战」）
 4. 双方进入 `/battle/[roomId]`，布置 → 战斗 → 结束
-5. 状态通过 **WebSocket** 实时同步（未配置或连接失败时自动 fallback 到 3 秒轮询）
+5. 状态通过 **WebSocket** 全实时同步（纯推送，无轮询）
 
 ## 好友对战流程
 
@@ -132,7 +132,7 @@ pnpm dev
 - WebSocket 长连接，房间/邀请/好友变更即时推送
 - **操作锁**：用户操作时跳过推送拉取，避免冲突
 - **深度比较**：只在数据真正变化时更新 UI
-- **Fallback**：未配置 `NEXT_PUBLIC_WS_URL` 或连接失败时，自动降级为 3 秒轮询
+- **依赖**：`NEXT_PUBLIC_WS_URL` 必填，未配置或连接失败时会提示错误
 
 **部署说明：** 见 `ws-server/README.md`，需配置子域名 `ws.teotihuacan.cloud` 指向阿里云。
 

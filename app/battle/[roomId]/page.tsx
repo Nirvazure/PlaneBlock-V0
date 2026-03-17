@@ -7,7 +7,7 @@ import { GameBoard } from "@/components/game-board"
 import { GameSetup } from "@/components/game-setup"
 import { GameStatus } from "@/components/game-status"
 import { Card } from "@/components/ui/card"
-import { getRoom, updateRoomState } from "@/lib/game-session"
+import { updateRoomState } from "@/lib/game-session"
 import { useWsRoom } from "@/lib/use-ws-room"
 import type { GameState } from "@/lib/game-types"
 
@@ -68,9 +68,7 @@ export default function BattleRoomPage() {
       
       try {
         await updateRoomState(roomId, next)
-        const room = await getRoom(roomId)
-        setGameState(room.state)
-        notifyRoomUpdated()
+        notifyRoomUpdated() // room:updated 广播会触发 use-ws-room 的 fetchRoom，避免重复 GET
       } catch (e) {
         console.error(e)
         toast.error("同步失败，请重试")

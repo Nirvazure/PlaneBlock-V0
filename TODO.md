@@ -11,7 +11,7 @@
 
 ### 实时同步方案演进
 - [x] ~~CloudBase watch~~ → 在中国大陆不稳定，频繁断开（`SYS_ERR`）
-- [x] **智能轮询** → 稳定可靠，作为 WebSocket  fallback
+- [x] ~~智能轮询~~ → 已移除，改为纯 WebSocket 全实时
 - [x] **阿里云 WebSocket** → 第四阶段已实现，全实时推送
 
 ### 技术决策记录
@@ -37,7 +37,7 @@
 
 | 序号 | 内容 | 优先级 | 说明 |
 |------|------|--------|------|
-| 1 | 阿里云 WebSocket 全实时 | 高 | ✅ 已实现：ws-server + 前端 hooks，无 WS 时自动 fallback 轮询 |
+| 1 | 阿里云 WebSocket 全实时 | 高 | ✅ 已实现：ws-server + 前端 hooks，纯 WebSocket 无轮询 |
 | 2 | PWA 支持 | 低 | 支持安装到桌面 |
 | 3 | 移动端优化 | 中 | 触摸操作优化 |
 

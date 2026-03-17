@@ -26,7 +26,6 @@ export function useWsRoom(
   onError?: (err: string | null) => void,
   options?: { shouldSkipFetch?: () => boolean }
 ) {
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef = useRef(true)
 
   const fetchRoom = useCallback(async () => {
@@ -53,8 +52,8 @@ export function useWsRoom(
       ensureWsConnection().then((sock) => {
         if (!mountedRef.current) return
         if (!sock) {
-          pollRef.current = setInterval(fetchRoom, 3000)
           fetchRoom()
+          onError?.("实时连接失败，请刷新重试")
           return
         }
         subscribeRoom(roomId)
@@ -66,16 +65,12 @@ export function useWsRoom(
         fetchRoom()
       })
     } else {
-      pollRef.current = setInterval(fetchRoom, 3000)
       fetchRoom()
+      onError?.("实时功能需要配置 NEXT_PUBLIC_WS_URL")
     }
 
     return () => {
       mountedRef.current = false
-      if (pollRef.current) {
-        clearInterval(pollRef.current)
-        pollRef.current = null
-      }
       unsubscribeRoom(roomId)
       unsub?.()
     }
