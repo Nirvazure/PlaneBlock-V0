@@ -89,15 +89,16 @@
 **成果：**
 - ✅ 完整的游戏流程（登录 → 创建/加入房间 → 对战 → 结算）
 - ✅ 好友系统（添加、邀请、管理）
-- ✅ 稳定的实时同步（智能轮询方案）
+- ✅ WebSocket 全实时同步（无轮询）
 - ✅ 中国大陆可用（无需翻墙、无海外依赖）
-- ✅ 零运维成本（纯 Serverless）
+- ✅ 零运维成本（Vercel Serverless + 阿里云轻量 WS）
 
 **技术栈：**
-- Next.js 14 + CloudBase + Vercel
-- 智能轮询（3s 间隔 + 操作锁）
+- Next.js 14 + CloudBase + Vercel + 阿里云 ws-server
+- WebSocket 推送 + 同步中 loading + 操作锁
 
-**延迟：** 3 秒（回合制游戏可接受）
-
-**下一步：** 部署 ws-server 到阿里云（见 `ws-server/README.md`），配置 Vercel 环境变量
+**近期优化（2026-03-17）：**
+- 修复 invites 接口因 effect 依赖导致频繁请求
+- 同步中禁用放置/攻击操作，防止重复点击
+- 对方回合 / 同步中 / 轮到你 状态区分展示
 
