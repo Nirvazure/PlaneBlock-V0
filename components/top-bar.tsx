@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { watchFriendRequests } from "@/lib/watch-friends"
 
 interface TopBarProps {
   onOpenFriends?: () => void
@@ -14,6 +13,7 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
   const [pendingRequests, setPendingRequests] = useState(0)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchRequests = useCallback(() => {
     fetch("/api/friends/requests", { credentials: "include" })
@@ -24,12 +24,19 @@ export function TopBar({ onOpenFriends }: TopBarProps) {
   useEffect(() => {
     if (!user?.id) return
     if (pathname?.startsWith("/battle")) return
+
+    // 初始加载
     fetchRequests()
-    const close = watchFriendRequests(user.id, {
-      onUpdate: fetchRequests,
-      onError: () => fetchRequests(),
-    })
-    return close
+
+    // 每 3 秒轮询一次
+    pollIntervalRef.current = setInterval(fetchRequests, 3000)
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
   }, [user?.id, pathname, fetchRequests])
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { GameBoard } from "@/components/game-board"
@@ -8,7 +8,6 @@ import { GameSetup } from "@/components/game-setup"
 import { GameStatus } from "@/components/game-status"
 import { Card } from "@/components/ui/card"
 import { getRoom, updateRoomState } from "@/lib/game-session"
-import { watchGameRoom } from "@/lib/watch-room"
 import type { GameState } from "@/lib/game-types"
 
 type BattleView = "mine" | "attack"
@@ -24,42 +23,49 @@ export default function BattleRoomPage() {
   const [roomCode, setRoomCode] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!roomId) return
-    let closed = false
-    const onDoc = (doc: { roomCode: string; state: GameState }) => {
-      if (closed) return
-      setGameState(doc.state)
-      setRoomCode(doc.roomCode)
-      setError(null)
-      setLoading(false)
-    }
-    getRoom(roomId)
-      .then((room) => {
-        if (closed) return
-        setGameState(room.state)
+    let isMounted = true
+
+    const pollRoom = async () => {
+      try {
+        const room = await getRoom(roomId)
+        if (!isMounted) return
+
         setRoomCode(room.roomCode)
         setError(null)
         setLoading(false)
-      })
-      .catch((err) => {
-        if (closed) return
+
+        // 深度比较，避免不必要的重渲染
+        setGameState((prev) => {
+          if (!prev) return room.state
+          if (JSON.stringify(prev) === JSON.stringify(room.state)) {
+            return prev // 数据未变化，返回旧引用，不触发重渲染
+          }
+          return room.state
+        })
+      } catch (err) {
+        if (!isMounted) return
+        console.error("[poll] room error:", err)
         setError(err instanceof Error ? err.message : "加载失败")
         setLoading(false)
-      })
-    const close = watchGameRoom(roomId, {
-      onChange: onDoc,
-      onError: (err) => {
-        if (closed) return
-        console.error("[watch] room error:", err)
-        toast.error("实时同步断开，请刷新页面获取最新状态")
-        setLoading(false)
-      },
-    })
+      }
+    }
+
+    // 初始加载
+    pollRoom()
+
+    // 每 2 秒轮询一次
+    pollIntervalRef.current = setInterval(pollRoom, 2000)
+
     return () => {
-      closed = true
-      close()
+      isMounted = false
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
     }
   }, [roomId])
 
