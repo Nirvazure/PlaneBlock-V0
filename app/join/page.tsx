@@ -52,7 +52,7 @@ export default function JoinPage() {
             <Link href="/login">去登录</Link>
           </Button>
           <p className="text-center text-xs text-muted-foreground mt-6">
-            <Link href="/battle" className="hover:underline">返回</Link>
+            <Link href="/" className="hover:underline">返回</Link>
           </p>
         </Card>
       </div>
@@ -81,7 +81,7 @@ export default function JoinPage() {
         </form>
         <p className="text-xs text-muted-foreground mt-2">以 {user.nickname} 身份加入</p>
         <p className="text-center text-xs text-muted-foreground mt-4">
-          <Link href="/battle" className="hover:underline">
+          <Link href="/" className="hover:underline">
             返回
           </Link>
         </p>
