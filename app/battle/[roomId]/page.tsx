@@ -24,12 +24,18 @@ export default function BattleRoomPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isUpdatingRef = useRef(false) // 操作锁：true 表示正在执行用户操作
 
   useEffect(() => {
     if (!roomId) return
     let isMounted = true
 
     const pollRoom = async () => {
+      // 如果正在执行用户操作，跳过本次轮询
+      if (isUpdatingRef.current) {
+        return
+      }
+
       try {
         const room = await getRoom(roomId)
         if (!isMounted) return
@@ -57,8 +63,8 @@ export default function BattleRoomPage() {
     // 初始加载
     pollRoom()
 
-    // 每 2 秒轮询一次
-    pollIntervalRef.current = setInterval(pollRoom, 2000)
+    // 每 3 秒轮询一次
+    pollIntervalRef.current = setInterval(pollRoom, 3000)
 
     return () => {
       isMounted = false
@@ -70,14 +76,33 @@ export default function BattleRoomPage() {
   }, [roomId])
 
   const setGameStateAndSync = useCallback(
-    (updater: GameState | ((prev: GameState) => GameState)) => {
+    async (updater: GameState | ((prev: GameState) => GameState)) => {
       if (!gameState) return
+      
+      // 加锁：标记正在更新
+      isUpdatingRef.current = true
+      
       const next = typeof updater === "function" ? updater(gameState) : updater
+      
+      // 立即更新本地状态（乐观更新）
       setGameState(next)
-      updateRoomState(roomId, next).catch((e) => {
+      
+      try {
+        // 发送到服务器
+        await updateRoomState(roomId, next)
+        
+        // 操作成功后，立即拉取最新数据
+        const room = await getRoom(roomId)
+        setGameState(room.state)
+      } catch (e) {
         console.error(e)
         toast.error("同步失败，请重试")
-      })
+        // 失败时恢复旧状态
+        setGameState(gameState)
+      } finally {
+        // 解锁
+        isUpdatingRef.current = false
+      }
     },
     [roomId, gameState]
   )
