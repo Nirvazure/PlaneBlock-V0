@@ -27,20 +27,26 @@ export function useWsRoom(
   options?: { shouldSkipFetch?: () => boolean }
 ) {
   const mountedRef = useRef(true)
+  const onRoomUpdateRef = useRef(onRoomUpdate)
+  const onErrorRef = useRef(onError)
+  const optionsRef = useRef(options)
+  onRoomUpdateRef.current = onRoomUpdate
+  onErrorRef.current = onError
+  optionsRef.current = options
 
   const fetchRoom = useCallback(async () => {
     if (!roomId) return
-    if (options?.shouldSkipFetch?.()) return
+    if (optionsRef.current?.shouldSkipFetch?.()) return
     try {
       const room = await getRoom(roomId)
-      if (mountedRef.current) onRoomUpdate(room)
-      if (onError && mountedRef.current) onError(null)
+      if (mountedRef.current) onRoomUpdateRef.current(room)
+      if (mountedRef.current) onErrorRef.current?.(null)
     } catch (err) {
       if (mountedRef.current) {
-        onError?.(err instanceof Error ? err.message : "加载失败")
+        onErrorRef.current?.(err instanceof Error ? err.message : "加载失败")
       }
     }
-  }, [roomId, onRoomUpdate, onError, options])
+  }, [roomId])
 
   useEffect(() => {
     mountedRef.current = true
@@ -53,7 +59,7 @@ export function useWsRoom(
         if (!mountedRef.current) return
         if (!sock) {
           fetchRoom()
-          onError?.("实时连接失败，请刷新重试")
+          onErrorRef.current?.("实时连接失败，请刷新重试")
           return
         }
         subscribeRoom(roomId)
@@ -66,7 +72,7 @@ export function useWsRoom(
       })
     } else {
       fetchRoom()
-      onError?.("实时功能需要配置 NEXT_PUBLIC_WS_URL")
+      onErrorRef.current?.("实时功能需要配置 NEXT_PUBLIC_WS_URL")
     }
 
     return () => {

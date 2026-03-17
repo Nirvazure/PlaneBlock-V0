@@ -12,9 +12,11 @@ interface GameBoardProps {
   gamePhase: GamePhase
   /** 用于判断可点击的棋盘；未传时与 board 相同（解决 preview 覆盖导致无法点击） */
   clickableBoard?: CellState[][]
+  /** 同步中或禁用交互时设为 true */
+  disabled?: boolean
 }
 
-export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, gamePhase, clickableBoard }: GameBoardProps) {
+export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, gamePhase, clickableBoard, disabled = false }: GameBoardProps) {
   const boardForClick = clickableBoard ?? board
   const getCellContent = (row: number, col: number, cellState: CellState) => {
     switch (cellState) {
@@ -49,6 +51,7 @@ export function GameBoard({ board, airplanes, isOwn, onCellClick, onCellHover, g
   }
 
   const isClickable = (cellState: CellState) => {
+    if (disabled) return false
     if (gamePhase === "setup") return isOwn && cellState === "empty"
     if (gamePhase === "battle") return !isOwn && cellState === "empty"
     return false

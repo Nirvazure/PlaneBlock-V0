@@ -16,11 +16,15 @@ export function useWsUserEvents(
 ) {
   const { enabled = true } = options ?? {}
   const mountedRef = useRef(true)
+  const onInvitesRef = useRef(onInvites)
+  const onFriendRequestsRef = useRef(onFriendRequests)
+  onInvitesRef.current = onInvites
+  onFriendRequestsRef.current = onFriendRequests
 
   const doFetch = useCallback(() => {
-    onInvites()
-    onFriendRequests()
-  }, [onInvites, onFriendRequests])
+    onInvitesRef.current()
+    onFriendRequestsRef.current()
+  }, [])
 
   useEffect(() => {
     mountedRef.current = true

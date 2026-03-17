@@ -11,9 +11,10 @@ import type { GameState, Airplane, Direction, CellState } from "@/lib/game-types
 interface GameSetupProps {
   gameState: GameState
   setGameState: (state: GameState | ((prev: GameState) => GameState)) => void
+  disabled?: boolean
 }
 
-export function GameSetup({ gameState, setGameState }: GameSetupProps) {
+export function GameSetup({ gameState, setGameState, disabled = false }: GameSetupProps) {
   const [selectedDirection, setSelectedDirection] = useState<Direction>("up")
   const [previewBoard, setPreviewBoard] = useState<CellState[][]>(
     Array(10)
@@ -85,6 +86,7 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
   }
 
   const placeAirplane = (headRow: number, headCol: number) => {
+    if (disabled) return
     if (!canPlaceAirplane(headRow, headCol, selectedDirection)) {
       toast.error("无法在此位置放置飞机，请选择其他位置或方向")
       return
@@ -152,6 +154,7 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
   }
 
   const nextPlayer = () => {
+    if (disabled) return
     if (gameState.currentPlayer === 1) {
       setGameState((prev) => ({ ...prev, currentPlayer: 2 }))
     } else {
@@ -186,8 +189,8 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
             clickableBoard={gameState.playerBoards[gameState.currentPlayer]}
             airplanes={currentPlayerAirplanes}
             isOwn={true}
-            onCellClick={canPlaceMore ? placeAirplane : () => {}}
-            onCellHover={canPlaceMore ? handleCellHover : undefined}
+            onCellClick={canPlaceMore && !disabled ? placeAirplane : () => {}}
+            onCellHover={canPlaceMore && !disabled ? handleCellHover : undefined}
             gamePhase="setup"
           />
         </div>
@@ -220,7 +223,7 @@ export function GameSetup({ gameState, setGameState }: GameSetupProps) {
           </div>
 
           {currentPlayerAirplanes.length === 3 && (
-            <Button onClick={nextPlayer} className="w-full">
+            <Button onClick={nextPlayer} className="w-full" disabled={disabled}>
               {gameState.currentPlayer === 1 ? "玩家2布置飞机" : "开始游戏"}
             </Button>
           )}

@@ -24,7 +24,10 @@ export default function BattleRoomPage() {
   const [roomCode, setRoomCode] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isSyncing, setIsSyncing] = useState(false)
   const isUpdatingRef = useRef(false)
+  const gameStateRef = useRef(gameState)
+  gameStateRef.current = gameState
 
   const onRoomUpdate = useCallback(
     (room: { roomId: string; roomCode: string; player1Nickname: string; player2Nickname: string | null; state: GameState }) => {
@@ -56,30 +59,28 @@ export default function BattleRoomPage() {
 
   const setGameStateAndSync = useCallback(
     async (updater: GameState | ((prev: GameState) => GameState)) => {
-      if (!gameState) return
-      
-      // 加锁：标记正在更新
+      const prev = gameStateRef.current
+      if (!prev) return
+      if (isSyncing) return
+
       isUpdatingRef.current = true
-      
-      const next = typeof updater === "function" ? updater(gameState) : updater
-      
-      // 立即更新本地状态（乐观更新）
+      setIsSyncing(true)
+      const next = typeof updater === "function" ? updater(prev) : updater
       setGameState(next)
-      
+
       try {
         await updateRoomState(roomId, next)
-        notifyRoomUpdated() // room:updated 广播会触发 use-ws-room 的 fetchRoom，避免重复 GET
+        notifyRoomUpdated()
       } catch (e) {
         console.error(e)
         toast.error("同步失败，请重试")
-        // 失败时恢复旧状态
-        setGameState(gameState)
+        setGameState(prev)
       } finally {
-        // 解锁
         isUpdatingRef.current = false
+        setIsSyncing(false)
       }
     },
-    [roomId, gameState, notifyRoomUpdated]
+    [roomId, notifyRoomUpdated, isSyncing]
   )
 
   if (loading && !gameState) {
@@ -131,10 +132,10 @@ export default function BattleRoomPage() {
           {gameState.phase === "setup" ? (
             <div className="lg:col-span-2 min-w-0">
               {gameState.currentPlayer === slot ? (
-                <GameSetup gameState={gameState} setGameState={setGameStateAndSync} />
+                <GameSetup gameState={gameState} setGameState={setGameStateAndSync} disabled={isSyncing} />
               ) : (
                 <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">等待玩家 {gameState.currentPlayer} 布置飞机...</p>
+                  <p className="text-muted-foreground">等待玩家 {gameState.currentPlayer} 布置飞机，请稍候...</p>
                 </Card>
               )}
             </div>
@@ -178,7 +179,7 @@ export default function BattleRoomPage() {
                     airplanes={[]}
                     isOwn={false}
                     onCellClick={(row, col) => {
-                      if (gameState.phase !== "battle" || !isMyTurn) return
+                      if (gameState.phase !== "battle" || !isMyTurn || isSyncing) return
 
                       const opponent = slot === 1 ? 2 : 1
                       const attackBoard = [...gameState.attackBoards[slot]]
@@ -221,10 +222,13 @@ export default function BattleRoomPage() {
                       toast.success(result === "hit" ? "击中！" : "未击中")
                     }}
                     gamePhase={gameState.phase}
+                    disabled={isSyncing}
                   />
                 </div>
-                {!isMyTurn && gameState.phase === "battle" && (
-                  <p className="text-center text-xs text-muted-foreground mt-2">等待对手回合</p>
+                {gameState.phase === "battle" && (
+                  <p className="text-center text-xs text-muted-foreground mt-2">
+                    {!isMyTurn ? "等待对手回合..." : isSyncing ? "同步中..." : "轮到你攻击"}
+                  </p>
                 )}
               </Card>
             </>
