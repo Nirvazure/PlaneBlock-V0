@@ -70,9 +70,12 @@ TCB_SECRET_KEY=腾讯云主账号 SecretKey
 1. [云开发控制台](https://console.cloud.tencent.com/tcb) 开通环境，得到 envId
 2. **登录授权**：在控制台 → 登录授权 → 常规登录，启用「短信验证码」
 3. 云数据库创建以下集合（选「空集合」即可）：
-   - `game_sessions`（对局房间，已有）
-   - `profiles`、`friends`、`friend_requests`、`battle_invites`（新加）
-4. **集合权限**：`game_sessions`、`friend_requests`、`battle_invites`、`friends` 需配置自定义安全规则以支持 watch 实时；其余选「无权限 [ADMINONLY]」。详见 [CLOUDBASE_SETUP.md](./CLOUDBASE_SETUP.md)
+   - `game_sessions`（对局房间）
+   - `profiles`（用户资料）
+   - `friends`（好友关系）
+   - `friend_requests`（好友请求）
+   - `battle_invites`（对战邀请）
+4. **集合权限**：全部选择「无权限 [ADMINONLY]」—— 仅后端可访问，安全且符合架构
 5. 免费版无法配置安全域名，需使用后端代理（已实现）
 
 #### 云数据库集合说明
@@ -106,7 +109,7 @@ pnpm dev
 2. 玩家 A：`/battle` → 创建房间 → 得到房间码
 3. 玩家 B：`/join` → 输入房间码 → 加入对战（或从好友侧栏「邀请对战」）
 4. 双方进入 `/battle/[roomId]`，布置 → 战斗 → 结束
-5. 状态通过 **CloudBase watch 实时推送** 同步
+5. 状态通过**智能轮询**同步（3 秒延迟，包含操作锁避免冲突）
 
 ## 好友对战流程
 
@@ -114,9 +117,58 @@ pnpm dev
 2. 好友侧栏 → 输入用户 ID 添加好友 → 对方在侧栏接受请求
 3. 成为好友后，点击「邀请对战」→ 对方会在顶部收到邀请横幅，点击接受即进入对战
 
+## 技术亮点
+
+### 实时同步方案
+
+本项目采用**智能轮询**替代 WebSocket，实现稳定的实时同步：
+
+**核心机制：**
+- 每 3 秒轮询服务器获取最新状态
+- **操作锁**：用户操作时暂停轮询，避免冲突
+- **深度比较**：只在数据真正变化时更新 UI，避免抖动
+- **乐观更新**：用户操作立即生效，后台异步同步
+
+**优势：**
+- ✅ 稳定可靠（REST API 比 WebSocket 稳定）
+- ✅ 中国大陆友好（无需跨境连接）
+- ✅ 零运维成本（纯 Serverless）
+- ✅ 适合回合制游戏（3 秒延迟可接受）
+
+**技术细节：**
+```typescript
+// 操作锁机制
+const isUpdatingRef = useRef(false)
+
+// 轮询时检查锁
+if (isUpdatingRef.current) return // 跳过
+
+// 用户操作时加锁
+isUpdatingRef.current = true
+await updateRoomState(roomId, newState)
+isUpdatingRef.current = false
+```
+
+### 为什么不用 WebSocket？
+
+| 方案 | 中国大陆 | 成本 | 稳定性 | 说明 |
+|------|---------|------|--------|------|
+| CloudBase watch | ⚠️ 不稳定 | 免费 | ❌ | 频繁断开（`SYS_ERR`） |
+| Pusher/Ably | ⚠️ 不稳定 | 免费/付费 | ⚠️ | 跨境连接，可能被墙 |
+| 轻量服务器 | ✅ 稳定 | 60 元/月 | ✅ | 需要运维 |
+| **智能轮询** | ✅ 完美 | 免费 | ✅ | 当前方案 |
+
 ## 后续计划
 
+### 功能
 - 随机匹配陌生人
+- 战绩排行榜
+- 游戏回放
+
+### 优化（可选）
+- 如有真实用户抱怨延迟，可升级为 WebSocket：
+  - 方案 1：腾讯云轻量服务器（60 元/月，最稳定）
+  - 方案 2：国内 IM 服务（融云/环信）
 
 ---
 
